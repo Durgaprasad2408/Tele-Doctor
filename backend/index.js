@@ -46,7 +46,29 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+      
+      // List of allowed origins (same as main CORS config)
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://tele-doctor-five.vercel.app",
+        "https://tele-doctor-9cfi5lcrx-durgaprasad2408s-projects.vercel.app"
+      ];
+      
+      // Add the environment variable if it exists
+      if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+        allowedOrigins.push(process.env.CLIENT_URL);
+      }
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'), false);
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -61,12 +83,38 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+// Enhanced CORS configuration for production
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://tele-doctor-five.vercel.app",
+      "https://tele-doctor-9cfi5lcrx-durgaprasad2408s-projects.vercel.app"
+    ];
+    
+    // Add the environment variable if it exists
+    if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+      allowedOrigins.push(process.env.CLIENT_URL);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'), false);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting - separate limiters for auth and general API
 const authLimiter = rateLimit({

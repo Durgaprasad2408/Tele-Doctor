@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0284c7" />
+    <meta name="background-color" content="#ffffff" />
+    <meta name="display" content="standalone" />
+    <meta name="orientation" content="portrait-primary" />
+    
+    <!-- App Information -->
+    <title>TeleMed - Healthcare Portal</title>
+    <meta name="description" content="Secure online health consultations with real-time chat, video calling, and medical records management" />
+    <meta name="keywords" content="telemedicine, healthcare, online consultation, video call, medical records" />
+    <meta name="author" content="TeleMed Healthcare" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    
+    <!-- Apple PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TeleMed" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-TileColor" content="#0284c7" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TeleMed - Healthcare Portal" />
+    <meta property="og:description" content="Secure online health consultations with real-time chat, video calling, and medical records management" />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta property="og:url" content="https://telemed.app" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TeleMed - Healthcare Portal" />
+    <meta name="twitter:description" content="Secure online health consultations with real-time chat, video calling, and medical records management" />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    
+    <!-- Preload Critical Resources -->
+    <link rel="preload" href="/call-sound.mp3" as="audio" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <!-- PWA Install Prompt -->
+    <div id="pwa-install-prompt" style="display: none;">
+      <div style="position: fixed; bottom: 20px; left: 20px; right: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 16px; z-index: 1000;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <img src="/icons/icon-72x72.png" alt="TeleMed" style="width: 48px; height: 48px; border-radius: 8px;" />
+          <div style="flex: 1;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #1f2937;">Install TeleMed</h3>
+            <p style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">Get quick access to your healthcare portal</p>
+          </div>
+          <button id="pwa-install-button" style="background: #0284c7; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 500; cursor: pointer;">Install</button>
+          <button id="pwa-dismiss-button" style="background: transparent; color: #6b7280; border: none; padding: 8px; cursor: pointer;">✕</button>
+        </div>
+      </div>
+    </div>
+    
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- PWA Registration Script -->
+    <script>
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New content is available, show update prompt
+                    if (confirm('New version available! Reload to update?')) {
+                      window.location.reload();
+                    }
+                  }
+                });
+              });
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+      
+      // PWA Install Prompt
+      let deferredPrompt;
+      const installPrompt = document.getElementById('pwa-install-prompt');
+      const installButton = document.getElementById('pwa-install-button');
+      const dismissButton = document.getElementById('pwa-dismiss-button');
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // Show install prompt if not already installed
+        if (!window.matchMedia('(display-mode: standalone)').matches) {
+          installPrompt.style.display = 'block';
+        }
+      });
+      
+      installButton.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`User response to the install prompt: ${outcome}`);
+          deferredPrompt = null;
+          installPrompt.style.display = 'none';
+        }
+      });
+      
+      dismissButton.addEventListener('click', () => {
+        installPrompt.style.display = 'none';
+        localStorage.setItem('pwa-install-dismissed', 'true');
+      });
+      
+      // Hide install prompt if already dismissed
+      if (localStorage.getItem('pwa-install-dismissed') === 'true') {
+        installPrompt.style.display = 'none';
+      }
+      
+      // Hide install prompt if already installed
+      window.addEventListener('appinstalled', () => {
+        installPrompt.style.display = 'none';
+        console.log('PWA was installed');
+      });
+      
+      // Handle app shortcuts
+      if ('navigator' in window && 'setAppBadge' in navigator) {
+        // You can set app badge for unread notifications
+        // navigator.setAppBadge(unreadCount);
+      }
+      
+      // Handle offline/online status
+      window.addEventListener('online', () => {
+        console.log('App is online');
+        // You can show a toast notification here
+      });
+      
+      window.addEventListener('offline', () => {
+        console.log('App is offline');
+        // You can show an offline indicator here
+      });
+    </script>
+  </body>
+</html>

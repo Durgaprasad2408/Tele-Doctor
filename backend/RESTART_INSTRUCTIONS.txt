@@ -1,0 +1,33 @@
+FILE UPLOAD FIX - RESTART REQUIRED
+
+The file upload issue has been FIXED with better error detection.
+
+WHAT TO DO NOW:
+
+1. STOP the backend server (Ctrl+C)
+
+2. TEST environment variables:
+   node test-env.js
+
+3. If Cloudinary shows "NOT SET":
+   - Add to .env file:
+     CLOUDINARY_CLOUD_NAME=your_cloud_name
+     CLOUDINARY_API_KEY=your_api_key
+     CLOUDINARY_API_SECRET=your_api_secret
+   
+   - Get from: https://cloudinary.com/console
+
+4. START server again:
+   npm run dev
+
+5. Look for:
+   [OK] Cloudinary configured successfully for chat uploads
+
+TESTING:
+
+Test if Cloudinary is working:
+  curl http://localhost:5000/api/chat/upload-status
+
+Should return: "configured": true
+
+See CLOUDINARY_FIX.md for detailed troubleshooting!

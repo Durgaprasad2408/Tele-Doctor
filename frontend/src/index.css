@@ -1,0 +1,309 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+  color: #213547;
+  background-color: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 text-sm;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6;
+  }
+
+  .mobile-menu-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden;
+  }
+
+  .mobile-menu {
+    @apply fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 z-50 transform transition-transform duration-300 ease-in-out lg:hidden;
+  }
+
+  .mobile-menu.closed {
+    @apply -translate-x-full;
+  }
+
+  .mobile-menu.open {
+    @apply translate-x-0;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 640px) {
+  .card {
+    @apply p-4 rounded-lg;
+  }
+  
+  .btn-primary, .btn-secondary {
+    @apply py-3 px-4 text-sm;
+  }
+  
+  .input-field {
+    @apply py-3;
+  }
+}
+
+/* Responsive video container */
+.video-container {
+  @apply relative w-full;
+  aspect-ratio: 16/9;
+}
+
+@media (max-width: 768px) {
+  .video-container {
+    aspect-ratio: 4/3;
+  }
+}
+
+/* Animation utilities */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Loading spinner */
+.spinner {
+  @apply animate-spin rounded-full border-2 border-gray-200 border-t-primary-600;
+}
+
+/* Mobile-first responsive grid */
+.responsive-grid {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+}
+
+.responsive-grid-2 {
+  @apply grid grid-cols-1 gap-4 md:grid-cols-2;
+}
+
+.responsive-grid-3 {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+/* Mobile navigation */
+.mobile-nav-item {
+  @apply flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors rounded-lg mx-2;
+}
+
+.mobile-nav-item.active {
+  @apply bg-primary-50 text-primary-700 border-r-2 border-primary-600;
+}
+
+/* Responsive text sizes */
+.text-responsive-xs {
+  @apply text-xs sm:text-sm;
+}
+
+.text-responsive-sm {
+  @apply text-sm sm:text-base;
+}
+
+.text-responsive-base {
+  @apply text-base sm:text-lg;
+}
+
+.text-responsive-lg {
+  @apply text-lg sm:text-xl;
+}
+
+.text-responsive-xl {
+  @apply text-xl sm:text-2xl;
+}
+
+.text-responsive-2xl {
+  @apply text-2xl sm:text-3xl;
+}
+
+/* Mobile-friendly spacing */
+.space-mobile {
+  @apply space-y-4 sm:space-y-6;
+}
+
+.padding-mobile {
+  @apply p-4 sm:p-6;
+}
+
+.margin-mobile {
+  @apply m-4 sm:m-6;
+}
+
+/* Touch-friendly buttons */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+}
+
+/* Safe area for mobile devices */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Mobile modal styles */
+.mobile-modal {
+  @apply fixed inset-0 z-50 overflow-y-auto;
+}
+
+.mobile-modal-content {
+  @apply min-h-screen bg-white sm:min-h-0 sm:max-w-lg sm:mx-auto sm:mt-8 sm:rounded-lg sm:shadow-xl;
+}
+
+/* Responsive video call layout */
+.video-call-container {
+  @apply flex flex-col h-screen lg:h-auto lg:min-h-[600px];
+}
+
+.video-call-main {
+  @apply flex-1 flex flex-col lg:flex-row gap-2 lg:gap-4;
+}
+
+.video-call-sidebar {
+  @apply w-full lg:w-80 order-2 lg:order-1;
+}
+
+.video-call-video {
+  @apply flex-1 order-1 lg:order-2;
+}
+
+/* Mobile chat styles */
+.mobile-chat {
+  @apply fixed inset-x-0 bottom-0 bg-white border-t border-gray-200 z-40 transform transition-transform duration-300;
+}
+
+.mobile-chat.hidden {
+  @apply translate-y-full;
+}
+
+.mobile-chat.visible {
+  @apply translate-y-0;
+}
+
+/* Responsive table */
+.responsive-table {
+  @apply w-full overflow-x-auto;
+}
+
+.responsive-table table {
+  @apply min-w-full;
+}
+
+/* Mobile-first breakpoints */
+@media (max-width: 640px) {
+  .hide-mobile {
+    @apply hidden;
+  }
+  
+  .show-mobile {
+    @apply block;
+  }
+}
+
+@media (min-width: 641px) {
+  .hide-desktop {
+    @apply hidden;
+  }
+  
+  .show-desktop {
+    @apply block;
+  }
+}
+
+/* Improved focus states for accessibility */
+.focus-visible {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+}
+
+/* Mobile-optimized form styles */
+.mobile-form {
+  @apply space-y-4;
+}
+
+.mobile-form .form-group {
+  @apply space-y-2;
+}
+
+.mobile-form label {
+  @apply block text-sm font-medium text-gray-700;
+}
+
+.mobile-form input,
+.mobile-form select,
+.mobile-form textarea {
+  @apply w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base;
+}
+
+/* Prevent zoom on iOS */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

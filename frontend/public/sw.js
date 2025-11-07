@@ -99,8 +99,8 @@ async function handleApiRequest(request) {
     // Try network first
     const networkResponse = await fetch(request)
     
-    // Cache successful responses for specific endpoints
-    if (networkResponse.ok && shouldCacheApiResponse(url.pathname)) {
+    // Only cache successful 200 responses (ignore 206 partial content)
+    if (networkResponse.status === 200 && shouldCacheApiResponse(url.pathname)) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME)
       cache.put(request, networkResponse.clone())
     }
@@ -146,8 +146,8 @@ async function handleStaticRequest(request) {
     // Try network
     const networkResponse = await fetch(request)
     
-    // Cache successful responses
-    if (networkResponse.ok) {
+    // Only cache successful 200 responses (avoid 206, 304, etc.)
+    if (networkResponse.status === 200 && networkResponse.headers.get('Content-Type')?.includes('text')) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME)
       cache.put(request, networkResponse.clone())
     }

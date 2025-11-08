@@ -26,14 +26,6 @@ const createTransporter = () => {
     maxMessages: 100,
   };
 
-  // For SendGrid, use API key authentication
-  if (config.host.includes('sendgrid.net')) {
-    config.auth = {
-      user: 'apikey', // SendGrid requires 'apikey' as username
-      pass: process.env.EMAIL_PASSWORD, // API key as password
-    };
-  }
-
   // For Gmail, ensure correct settings and disable pooling
   if (config.host.includes('gmail.com')) {
     config.port = 587;

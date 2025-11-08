@@ -3,45 +3,40 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a transporter using environment variables
+// Create a transporter using Gmail with better production settings
 const createTransporter = () => {
-  // For production, prefer more reliable SMTP providers
-  const isProduction = process.env.NODE_ENV === 'production';
-
   const config = {
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 587,
-    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
     },
-    // Add connection timeout and retry options
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    // Add pool options for better connection management
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
+    // Production-optimized settings
+    secure: true,
+    port: 465,
+    // Connection settings for production reliability
+    connectionTimeout: 60000,
+    greetingTimeout: 30000,
+    socketTimeout: 60000,
+    // Disable pooling for Gmail in production
+    pool: false,
+    // Additional Gmail-specific options
+    tls: {
+      rejectUnauthorized: false
+    }
   };
 
-  // For Gmail, ensure correct settings and disable pooling
-  if (config.host.includes('gmail.com')) {
-    config.port = 587;
+  // Override for development/local testing with STARTTLS
+  if (process.env.NODE_ENV !== 'production') {
     config.secure = false;
+    config.port = 587;
     config.requireTLS = true;
-    config.pool = false;
-    config.auth = {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
-    };
-    // Enable debug logging to help troubleshoot
     config.debug = true;
     config.logger = true;
   }
 
-  return nodemailer.createTransport(config);
+  console.log(`Gmail transporter configured: secure=${config.secure}, port=${config.port}`);
+  return nodemailer.createTransporter(config);
 };
 
 const transporter = createTransporter();
@@ -139,24 +134,24 @@ const otpEmailTemplate = (otp) => ({
           <div class="logo">🏥 TeleMed</div>
           <div class="subtitle">Healthcare at Your Fingertips</div>
         </div>
-        
+
         <h2>Verify Your Email Address</h2>
         <p>Hello! Thank you for registering with TeleMed. To complete your account setup, please verify your email address using the code below:</p>
-        
+
         <div class="otp-container">
           <div class="otp-label">Your verification code is:</div>
           <div class="otp-code">${otp}</div>
         </div>
-        
+
         <div class="warning">
           <div class="warning-title">⚠️ Important Security Note</div>
           <div class="warning-text">
             This verification code will expire in 10 minutes. If you didn't create an account with TeleMed, please ignore this email.
           </div>
         </div>
-        
+
         <p>Enter this code in the registration form to continue. If you're having trouble, please contact our support team.</p>
-        
+
         <div class="footer">
           <p>This email was sent from TeleMed, your trusted healthcare platform.</p>
           <p>If you have any questions, contact us at support@telemed.com</p>
@@ -167,16 +162,16 @@ const otpEmailTemplate = (otp) => ({
   `,
   text: `
     TeleMed - Email Verification
-    
+
     Hello! Thank you for registering with TeleMed.
-    
+
     Your verification code is: ${otp}
-    
+
     This code will expire in 10 minutes.
     If you didn't create an account with TeleMed, please ignore this email.
-    
+
     Enter this code in the registration form to continue.
-    
+
     This email was sent from TeleMed.
     For support, contact us at support@telemed.com
   `
@@ -193,9 +188,6 @@ export const sendOTPMail = async (email, otp) => {
     console.log('=== EMAIL DEBUG START ===');
     console.log('Environment check:');
     console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
-    console.log(`EMAIL_HOST: ${process.env.EMAIL_HOST}`);
-    console.log(`EMAIL_PORT: ${process.env.EMAIL_PORT}`);
-    console.log(`EMAIL_SECURE: ${process.env.EMAIL_SECURE}`);
     console.log(`EMAIL_USER: ${process.env.EMAIL_USER ? 'Set' : 'NOT SET'}`);
     console.log(`EMAIL_PASSWORD: ${process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'NOT SET'}`);
     console.log(`EMAIL_FROM: ${process.env.EMAIL_FROM}`);
@@ -211,9 +203,7 @@ export const sendOTPMail = async (email, otp) => {
     };
 
     console.log(`Sending OTP email to: ${email}`);
-    console.log(`Using SMTP host: ${transporter.options.host}:${transporter.options.port}`);
-    console.log(`Transporter auth configured: ${transporter.options.auth ? 'Yes' : 'No'}`);
-    console.log(`Transporter options:`, JSON.stringify(transporter.options, null, 2));
+    console.log(`Transporter service: ${transporter.options.service}`);
 
     // Test connection first
     try {
@@ -352,17 +342,17 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
             <div class="header">
               <div class="logo">🏥 TeleMed</div>
             </div>
-            
+
             <div class="welcome-message">
               Welcome to TeleMed, ${firstName}! 🎉
             </div>
-            
+
             <p>We're excited to have you join our healthcare community. Your ${role === 'doctor' ? 'doctor' : 'patient'} account has been successfully created and verified.</p>
-            
+
             <div class="role-badge">
               ${role === 'doctor' ? '👨‍⚕️ Doctor Account' : '👤 Patient Account'}
             </div>
-            
+
             <div class="features">
               <h3>What you can do now:</h3>
               ${role === 'doctor' ? `
@@ -393,9 +383,9 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
                 </div>
               `}
             </div>
-            
+
             <p>Get started by logging into your account and exploring the platform!</p>
-            
+
             <div class="footer">
               <p>Thank you for choosing TeleMed for your healthcare needs.</p>
               <p>If you have any questions, contact us at support@telemed.com</p>
@@ -406,16 +396,16 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
       `,
       text: `
         Welcome to TeleMed, ${firstName}!
-        
+
         Your ${role} account has been successfully created and verified.
-        
-        ${role === 'doctor' ? 
+
+        ${role === 'doctor' ?
           'You can now set up your availability, start consulting with patients, and manage your medical practice.' :
           'You can now find and book appointments with doctors, start video consultations, and access your medical records.'
         }
-        
+
         Get started by logging into your account and exploring the platform!
-        
+
         Thank you for choosing TeleMed.
         For support, contact us at support@telemed.com
       `
@@ -432,7 +422,7 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
     console.log(`Sending welcome email to: ${email}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Welcome email sent successfully:', info.messageId);
-    
+
     return {
       success: true,
       messageId: info.messageId,
@@ -455,9 +445,10 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
 export const testEmailConfiguration = async () => {
   try {
     console.log('Testing email configuration...');
-    console.log(`SMTP Host: ${transporter.options.host}:${transporter.options.port}`);
+    console.log(`Service: ${transporter.options.service}`);
     console.log(`Auth User: ${transporter.options.auth?.user ? 'Set' : 'Not set'}`);
     console.log(`Secure: ${transporter.options.secure}`);
+    console.log(`Port: ${transporter.options.port}`);
 
     // Verify transporter configuration
     await transporter.verify();

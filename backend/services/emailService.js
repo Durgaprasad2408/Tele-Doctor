@@ -36,7 +36,7 @@ const createTransporter = () => {
   }
 
   console.log(`Gmail transporter configured: secure=${config.secure}, port=${config.port}`);
-  return nodemailer.createTransporter(config);
+  return nodemailer.createTransport(config);
 };
 
 const transporter = createTransporter();

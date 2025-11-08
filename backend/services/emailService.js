@@ -3,39 +3,34 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a transporter using Gmail with better production settings
+// Create a transporter using Gmail with production-optimized settings
 const createTransporter = () => {
+  // Use direct SMTP configuration for better reliability
   const config = {
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587, // Use STARTTLS for better compatibility
+    secure: false, // STARTTLS
+    requireTLS: true,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
     },
-    // Production-optimized settings
-    secure: true,
-    port: 465,
-    // Connection settings for production reliability
-    connectionTimeout: 60000,
+    // Connection settings optimized for production
+    connectionTimeout: 30000,
     greetingTimeout: 30000,
-    socketTimeout: 60000,
-    // Disable pooling for Gmail in production
+    socketTimeout: 30000,
+    // Disable pooling for Gmail
     pool: false,
-    // Additional Gmail-specific options
+    maxConnections: 1,
+    maxMessages: 100,
+    // Additional options
     tls: {
+      ciphers: 'SSLv3',
       rejectUnauthorized: false
     }
   };
 
-  // Override for development/local testing with STARTTLS
-  if (process.env.NODE_ENV !== 'production') {
-    config.secure = false;
-    config.port = 587;
-    config.requireTLS = true;
-    config.debug = true;
-    config.logger = true;
-  }
-
-  console.log(`Gmail transporter configured: secure=${config.secure}, port=${config.port}`);
+  console.log(`Gmail SMTP transporter configured: host=${config.host}, port=${config.port}, secure=${config.secure}`);
   return nodemailer.createTransport(config);
 };
 
@@ -205,13 +200,14 @@ export const sendOTPMail = async (email, otp) => {
     console.log(`Sending OTP email to: ${email}`);
     console.log(`Transporter service: ${transporter.options.service}`);
 
-    // Test connection first
-    try {
-      await transporter.verify();
-      console.log('Transporter verified successfully');
-    } catch (verifyError) {
-      console.error('Transporter verification failed:', verifyError.message);
-      throw verifyError;
+    // Skip verification in production for faster response
+    if (process.env.NODE_ENV === 'development') {
+      try {
+        await transporter.verify();
+        console.log('Transporter verified successfully');
+      } catch (verifyError) {
+        console.warn('Transporter verification warning:', verifyError.message);
+      }
     }
 
     const info = await transporter.sendMail(mailOptions);
@@ -230,6 +226,7 @@ export const sendOTPMail = async (email, otp) => {
     console.error('Error errno:', error.errno);
     console.error('Error syscall:', error.syscall);
     console.error('Error hostname:', error.hostname);
+    console.error('Stack trace:', error.stack);
     console.error('Full error object:', JSON.stringify(error, null, 2));
     console.error('=== EMAIL ERROR DEBUG END ===');
 

@@ -186,6 +186,16 @@ const otpEmailTemplate = (otp) => ({
  */
 export const sendOTPMail = async (email, otp) => {
   try {
+    console.log('=== EMAIL DEBUG START ===');
+    console.log('Environment check:');
+    console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`EMAIL_HOST: ${process.env.EMAIL_HOST}`);
+    console.log(`EMAIL_PORT: ${process.env.EMAIL_PORT}`);
+    console.log(`EMAIL_SECURE: ${process.env.EMAIL_SECURE}`);
+    console.log(`EMAIL_USER: ${process.env.EMAIL_USER ? 'Set' : 'NOT SET'}`);
+    console.log(`EMAIL_PASSWORD: ${process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'NOT SET'}`);
+    console.log(`EMAIL_FROM: ${process.env.EMAIL_FROM}`);
+
     const template = otpEmailTemplate(otp);
 
     const mailOptions = {
@@ -198,9 +208,11 @@ export const sendOTPMail = async (email, otp) => {
 
     console.log(`Sending OTP email to: ${email}`);
     console.log(`Using SMTP host: ${transporter.options.host}:${transporter.options.port}`);
+    console.log(`Transporter auth configured: ${transporter.options.auth ? 'Yes' : 'No'}`);
 
     const info = await transporter.sendMail(mailOptions);
     console.log('Email sent successfully:', info.messageId);
+    console.log('=== EMAIL DEBUG END ===');
 
     return {
       success: true,
@@ -208,13 +220,14 @@ export const sendOTPMail = async (email, otp) => {
       message: 'OTP sent successfully'
     };
   } catch (error) {
-    console.error('Error sending OTP email:', error);
-    console.error('Error details:', {
-      code: error.code,
-      command: error.command,
-      response: error.response,
-      responseCode: error.responseCode
-    });
+    console.error('=== EMAIL ERROR DEBUG ===');
+    console.error('Error sending OTP email:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Error errno:', error.errno);
+    console.error('Error syscall:', error.syscall);
+    console.error('Error hostname:', error.hostname);
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    console.error('=== EMAIL ERROR DEBUG END ===');
 
     // Provide more specific error messages
     let errorMessage = 'Failed to send OTP email';
@@ -224,6 +237,8 @@ export const sendOTPMail = async (email, otp) => {
       errorMessage = 'Cannot connect to email server. Please check network settings.';
     } else if (error.code === 'ETIMEDOUT') {
       errorMessage = 'Email server connection timed out.';
+    } else if (error.code === 'ENOTFOUND') {
+      errorMessage = 'Email server hostname not found.';
     }
 
     return {

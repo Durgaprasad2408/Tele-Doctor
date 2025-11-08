@@ -5,10 +5,9 @@ const DYNAMIC_CACHE_NAME = 'telemed-dynamic-v1.0.0'
 
 // Files to cache immediately
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
   '/call-sound.mp3',
   // Add other critical assets
 ]
@@ -134,28 +133,48 @@ async function handleApiRequest(request) {
   }
 }
 
-// Handle static requests with cache-first strategy
+// Handle static requests with network-first strategy for HTML
 async function handleStaticRequest(request) {
+  // For HTML pages, use network-first strategy
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    try {
+      // Try network first for HTML
+      const networkResponse = await fetch(request)
+      if (networkResponse.status === 200) {
+        return networkResponse
+      }
+    } catch {
+      console.log('Service Worker: Network failed for HTML request, trying cache')
+    }
+
+    // Fallback to cache for HTML
+    const cachedResponse = await caches.match(request)
+    if (cachedResponse) {
+      return cachedResponse
+    }
+  }
+
+  // For other assets, use cache-first strategy
   try {
     // Try cache first
     const cachedResponse = await caches.match(request)
     if (cachedResponse) {
       return cachedResponse
     }
-    
+
     // Try network
     const networkResponse = await fetch(request)
-    
+
     // Only cache successful 200 responses (avoid 206, 304, etc.)
     if (networkResponse.status === 200 && networkResponse.headers.get('Content-Type')?.includes('text')) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME)
       cache.put(request, networkResponse.clone())
     }
-    
+
     return networkResponse
   } catch (error) {
     console.log('Service Worker: Failed to fetch', request.url)
-    
+
     // Return offline page for navigation requests
     if (request.mode === 'navigate') {
       const offlineResponse = await caches.match('/')
@@ -163,7 +182,7 @@ async function handleStaticRequest(request) {
         return offlineResponse
       }
     }
-    
+
     throw error
   }
 }
@@ -212,8 +231,8 @@ self.addEventListener('push', (event) => {
   
   const options = {
     body: 'You have a new notification from TeleMed',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge-72x72.png',
+    icon: '/icon-192x192.png',
+    badge: '/badge-72x72.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -223,12 +242,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: 'View',
-        icon: '/icons/checkmark.png'
+        icon: '/checkmark.png'
       },
       {
         action: 'close',
         title: 'Close',
-        icon: '/icons/xmark.png'
+        icon: '/xmark.png'
       }
     ]
   }
@@ -252,14 +271,14 @@ self.addEventListener('notificationclick', (event) => {
   
   if (event.action === 'explore') {
     event.waitUntil(
-      clients.openWindow('/notifications')
+      self.clients.openWindow('/notifications')
     )
   } else if (event.action === 'close') {
     // Just close the notification
   } else {
     // Default action - open the app
     event.waitUntil(
-      clients.openWindow('/')
+      self.clients.openWindow('/')
     )
   }
 })
@@ -267,11 +286,15 @@ self.addEventListener('notificationclick', (event) => {
 // Handle message from main thread
 self.addEventListener('message', (event) => {
   console.log('Service Worker: Message received', event.data)
-  
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting()
+    // Force all clients to refresh
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => client.postMessage({ type: 'REFRESH_PAGE' }))
+    })
   }
-  
+
   if (event.data && event.data.type === 'GET_VERSION') {
     event.ports[0].postMessage({ version: CACHE_NAME })
   }

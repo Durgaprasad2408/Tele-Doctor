@@ -12,6 +12,8 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
+  // Add a 10-second timeout to prevent hanging on connection issues
+  timeout: 10000,
 });
 
 // Email template for OTP

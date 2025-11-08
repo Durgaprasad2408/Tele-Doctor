@@ -1,10 +1,11 @@
 // Service Worker for TeleMed PWA
-const CACHE_NAME = 'telemed-v1.0.0'
-const STATIC_CACHE_NAME = 'telemed-static-v1.0.0'
-const DYNAMIC_CACHE_NAME = 'telemed-dynamic-v1.0.0'
+const CACHE_NAME = 'telemed-v1.0.1'
+const STATIC_CACHE_NAME = 'telemed-static-v1.0.1'
+const DYNAMIC_CACHE_NAME = 'telemed-dynamic-v1.0.1'
 
 // Files to cache immediately
 const STATIC_ASSETS = [
+  '/', // Add root path for SPA shell
   '/manifest.json',
   '/icon-192x192.png',
   '/icon-512x512.png',
@@ -147,8 +148,8 @@ async function handleStaticRequest(request) {
       console.log('Service Worker: Network failed for HTML request, trying cache')
     }
 
-    // Fallback to cache for HTML
-    const cachedResponse = await caches.match(request)
+    // Fallback to cache for HTML. For SPAs, we always fall back to the root index.html
+    const cachedResponse = await caches.match('/')
     if (cachedResponse) {
       return cachedResponse
     }

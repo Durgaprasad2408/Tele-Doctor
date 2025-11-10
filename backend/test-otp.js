@@ -7,6 +7,11 @@ console.log('🧪 Testing OTP System Components...\n');
 // Test 1: Email Configuration
 async function testEmailConfig() {
   console.log('1️⃣ Testing Email Configuration...');
+  console.log('Environment variables:');
+  console.log(`EMAIL_USER: ${process.env.EMAIL_USER ? 'Set' : 'NOT SET'}`);
+  console.log(`EMAIL_PASSWORD: ${process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'NOT SET'}`);
+  console.log(`EMAIL_FROM: ${process.env.EMAIL_FROM}`);
+
   try {
     console.log('Testing transporter verification...');
     console.log('Calling testEmailConfiguration...');
@@ -34,6 +39,8 @@ async function testEmailConfig() {
     console.log('❌ Email configuration error:', error.message);
     console.log('Error stack:', error.stack);
   }
+  console.log('Test 1 completed');
+  return true;
 }
 
 // Test 2: OTP Generation and Storage
@@ -111,7 +118,9 @@ function testRateLimiting() {
 async function runAllTests() {
   console.log('🚀 Starting OTP System Tests\n');
 
-  await testEmailConfig();
+  const emailTestResult = await testEmailConfig();
+  console.log('Email test result:', emailTestResult);
+
   testOTPGeneration();
   await testFullOTPFlow();
   testRateLimiting();

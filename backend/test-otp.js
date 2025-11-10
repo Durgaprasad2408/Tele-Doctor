@@ -8,14 +8,31 @@ console.log('🧪 Testing OTP System Components...\n');
 async function testEmailConfig() {
   console.log('1️⃣ Testing Email Configuration...');
   try {
+    console.log('Testing transporter verification...');
+    console.log('Calling testEmailConfiguration...');
     const result = await testEmailConfiguration();
-    if (result.success) {
+    console.log('testEmailConfiguration completed');
+    console.log('Result received:', !!result);
+    console.log('Result type:', typeof result);
+    console.log('Result keys:', result ? Object.keys(result) : 'N/A');
+
+    if (result && typeof result === 'object' && result.success) {
       console.log('✅ Email configuration test passed');
+      console.log('Message:', result.message);
     } else {
-      console.log('❌ Email configuration test failed:', result.error);
+      console.log('❌ Email configuration test failed');
+      if (result && typeof result === 'object') {
+        console.log('Error:', result.error);
+        console.log('Error code:', result.code);
+        console.log('Error message:', result.message);
+      } else {
+        console.log('No valid result returned from testEmailConfiguration');
+        console.log('Result value:', result);
+      }
     }
   } catch (error) {
     console.log('❌ Email configuration error:', error.message);
+    console.log('Error stack:', error.stack);
   }
 }
 
@@ -49,22 +66,24 @@ async function testFullOTPFlow() {
   try {
     const testEmail = 'user@test.com';
     const otp = generateOTP();
-    
+
     console.log(`Sending OTP ${otp} to ${testEmail}...`);
     const sendResult = await sendOTPMail(testEmail, otp);
-    
+
     if (sendResult.success) {
       console.log('✅ OTP email sent successfully');
       console.log('Message ID:', sendResult.messageId);
-      
+
       // Simulate user entering the OTP
       const validationResult = validateOTP(testEmail, otp);
       console.log('OTP validation:', validationResult.valid ? '✅' : '❌');
-      
+
     } else {
       console.log('❌ OTP email failed:', sendResult.error);
+      console.log('Error code:', sendResult.code);
+      console.log('Error message:', sendResult.message);
     }
-    
+
   } catch (error) {
     console.log('❌ Full OTP flow error:', error.message);
   }
@@ -91,13 +110,14 @@ function testRateLimiting() {
 // Run all tests
 async function runAllTests() {
   console.log('🚀 Starting OTP System Tests\n');
-  
+
   await testEmailConfig();
   testOTPGeneration();
   await testFullOTPFlow();
   testRateLimiting();
-  
+
   console.log('\n🏁 Test suite completed!');
+  process.exit(0);
 }
 
 // Handle module import/export

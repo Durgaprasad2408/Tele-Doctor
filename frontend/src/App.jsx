@@ -4,7 +4,6 @@ import { SocketProvider } from './contexts/SocketContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import CallNotification from './components/CallNotification'
-import PWAInstallPrompt from './components/PWAInstallPrompt'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -46,7 +45,6 @@ function App() {
           </Route>
         </Routes>
         <CallNotification />
-        <PWAInstallPrompt />
       </SocketProvider>
     </AuthProvider>
   )

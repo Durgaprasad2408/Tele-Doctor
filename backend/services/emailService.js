@@ -196,9 +196,9 @@ export const sendOTPMail = async (email, otp) => {
 
     const template = otpEmailTemplate(otp);
 
-    // Use SendGrid in production if API key is available
-    if (process.env.NODE_ENV === 'production' && process.env.SENDGRID_API_KEY) {
-      console.log('Using SendGrid for production email delivery');
+    // Use SendGrid if API key is available (preferred for both local and production)
+    if (process.env.SENDGRID_API_KEY) {
+      console.log('Using SendGrid for email delivery');
 
       const msg = {
         to: email,
@@ -219,8 +219,8 @@ export const sendOTPMail = async (email, otp) => {
         message: 'OTP sent successfully via SendGrid'
       };
     } else {
-      // Use Gmail SMTP in development or when SendGrid is not configured
-      console.log('Using Gmail SMTP for email delivery');
+      // Fallback to Gmail SMTP when SendGrid is not configured
+      console.log('Using Gmail SMTP for email delivery (SendGrid not configured)');
 
       const mailOptions = {
         from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
@@ -443,8 +443,8 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
       `
     };
 
-    // Use SendGrid in production if API key is available
-    if (process.env.NODE_ENV === 'production' && process.env.SENDGRID_API_KEY) {
+    // Use SendGrid if API key is available (preferred for both local and production)
+    if (process.env.SENDGRID_API_KEY) {
       console.log('Using SendGrid for welcome email');
 
       const msg = {
@@ -464,8 +464,8 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
         message: 'Welcome email sent successfully via SendGrid'
       };
     } else {
-      // Use Gmail SMTP
-      console.log('Using Gmail SMTP for welcome email');
+      // Fallback to Gmail SMTP when SendGrid is not configured
+      console.log('Using Gmail SMTP for welcome email (SendGrid not configured)');
 
       const mailOptions = {
         from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
@@ -504,8 +504,8 @@ export const testEmailConfiguration = async () => {
     console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
     console.log(`SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'Set' : 'Not set'}`);
 
-    // Test SendGrid in production if API key is available
-    if (process.env.NODE_ENV === 'production' && process.env.SENDGRID_API_KEY) {
+    // Test SendGrid if API key is available (preferred for both local and production)
+    if (process.env.SENDGRID_API_KEY) {
       console.log('Testing SendGrid configuration...');
 
       const testMsg = {
@@ -523,8 +523,8 @@ export const testEmailConfiguration = async () => {
         message: 'SendGrid email configuration is working correctly'
       };
     } else {
-      // Test Gmail SMTP configuration
-      console.log('Testing Gmail SMTP configuration...');
+      // Fallback to test Gmail SMTP configuration
+      console.log('Testing Gmail SMTP configuration (SendGrid not configured)...');
       console.log(`SMTP Host: ${transporter.options.host}`);
       console.log(`SMTP Port: ${transporter.options.port}`);
       console.log(`Auth User: ${transporter.options.auth?.user ? 'Set' : 'Not set'}`);

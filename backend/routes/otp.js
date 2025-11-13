@@ -268,7 +268,7 @@ router.get('/test-email', async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: 'Email configuration is working correctly',
+        message: result.message,
         type: 'EMAIL_TEST_SUCCESS'
       });
     } else {

@@ -1,7 +1,13 @@
 import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// Initialize SendGrid if API key is available
+if (process.env.SENDGRID_API_KEY) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+}
 
 // Create a transporter using Gmail with production-optimized settings
 const createTransporter = () => {
@@ -183,43 +189,71 @@ export const sendOTPMail = async (email, otp) => {
     console.log('=== EMAIL DEBUG START ===');
     console.log('Environment check:');
     console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'Set' : 'NOT SET'}`);
     console.log(`EMAIL_USER: ${process.env.EMAIL_USER ? 'Set' : 'NOT SET'}`);
     console.log(`EMAIL_PASSWORD: ${process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'NOT SET'}`);
     console.log(`EMAIL_FROM: ${process.env.EMAIL_FROM}`);
 
     const template = otpEmailTemplate(otp);
 
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
-      to: email,
-      subject: template.subject,
-      html: template.html,
-      text: template.text,
-    };
+    // Use SendGrid in production if API key is available
+    if (process.env.NODE_ENV === 'production' && process.env.SENDGRID_API_KEY) {
+      console.log('Using SendGrid for production email delivery');
 
-    console.log(`Sending OTP email to: ${email}`);
-    console.log(`Transporter host: ${transporter.options.host}:${transporter.options.port}`);
+      const msg = {
+        to: email,
+        from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      };
 
-    // Skip verification entirely for faster response in production
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        await transporter.verify();
-        console.log('Transporter verified successfully');
-      } catch (verifyError) {
-        console.warn('Transporter verification warning:', verifyError.message);
-        // Don't throw in development either - just log
+      console.log(`Sending OTP email via SendGrid to: ${email}`);
+      const result = await sgMail.send(msg);
+      console.log('SendGrid email sent successfully:', result[0]?.headers?.['x-message-id']);
+      console.log('=== EMAIL DEBUG END ===');
+
+      return {
+        success: true,
+        messageId: result[0]?.headers?.['x-message-id'],
+        message: 'OTP sent successfully via SendGrid'
+      };
+    } else {
+      // Use Gmail SMTP in development or when SendGrid is not configured
+      console.log('Using Gmail SMTP for email delivery');
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
+        to: email,
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      };
+
+      console.log(`Sending OTP email to: ${email}`);
+      console.log(`Transporter host: ${transporter.options.host}:${transporter.options.port}`);
+
+      // Skip verification entirely for faster response in production
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          await transporter.verify();
+          console.log('Transporter verified successfully');
+        } catch (verifyError) {
+          console.warn('Transporter verification warning:', verifyError.message);
+          // Don't throw in development either - just log
+        }
       }
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully:', info.messageId);
+      console.log('=== EMAIL DEBUG END ===');
+
+      return {
+        success: true,
+        messageId: info.messageId,
+        message: 'OTP sent successfully via Gmail'
+      };
     }
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.messageId);
-    console.log('=== EMAIL DEBUG END ===');
-
-    return {
-      success: true,
-      messageId: info.messageId,
-      message: 'OTP sent successfully'
-    };
   } catch (error) {
     console.error('=== EMAIL ERROR DEBUG ===');
     console.error('Error sending OTP email:', error.message);
@@ -409,23 +443,47 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
       `
     };
 
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
-      to: email,
-      subject: welcomeTemplate.subject,
-      html: welcomeTemplate.html,
-      text: welcomeTemplate.text,
-    };
+    // Use SendGrid in production if API key is available
+    if (process.env.NODE_ENV === 'production' && process.env.SENDGRID_API_KEY) {
+      console.log('Using SendGrid for welcome email');
 
-    console.log(`Sending welcome email to: ${email}`);
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Welcome email sent successfully:', info.messageId);
+      const msg = {
+        to: email,
+        from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+        subject: welcomeTemplate.subject,
+        html: welcomeTemplate.html,
+        text: welcomeTemplate.text,
+      };
 
-    return {
-      success: true,
-      messageId: info.messageId,
-      message: 'Welcome email sent successfully'
-    };
+      const result = await sgMail.send(msg);
+      console.log('Welcome email sent successfully via SendGrid:', result[0]?.headers?.['x-message-id']);
+
+      return {
+        success: true,
+        messageId: result[0]?.headers?.['x-message-id'],
+        message: 'Welcome email sent successfully via SendGrid'
+      };
+    } else {
+      // Use Gmail SMTP
+      console.log('Using Gmail SMTP for welcome email');
+
+      const mailOptions = {
+        from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
+        to: email,
+        subject: welcomeTemplate.subject,
+        html: welcomeTemplate.html,
+        text: welcomeTemplate.text,
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log('Welcome email sent successfully:', info.messageId);
+
+      return {
+        success: true,
+        messageId: info.messageId,
+        message: 'Welcome email sent successfully via Gmail'
+      };
+    }
   } catch (error) {
     console.error('Error sending welcome email:', error);
     return {
@@ -443,18 +501,43 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
 export const testEmailConfiguration = async () => {
   try {
     console.log('Testing email configuration...');
-    console.log(`Service: ${transporter.options.service}`);
-    console.log(`Auth User: ${transporter.options.auth?.user ? 'Set' : 'Not set'}`);
-    console.log(`Secure: ${transporter.options.secure}`);
-    console.log(`Port: ${transporter.options.port}`);
+    console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'Set' : 'Not set'}`);
 
-    // Verify transporter configuration
-    await transporter.verify();
-    console.log('Email configuration verified successfully');
-    return {
-      success: true,
-      message: 'Email configuration is working correctly'
-    };
+    // Test SendGrid in production if API key is available
+    if (process.env.NODE_ENV === 'production' && process.env.SENDGRID_API_KEY) {
+      console.log('Testing SendGrid configuration...');
+
+      const testMsg = {
+        to: process.env.EMAIL_USER || 'test@example.com', // Send to yourself for testing
+        from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+        subject: 'TeleMed Email Configuration Test',
+        text: 'This is a test email to verify SendGrid configuration.',
+        html: '<p>This is a test email to verify <strong>SendGrid</strong> configuration.</p>'
+      };
+
+      await sgMail.send(testMsg);
+      console.log('SendGrid configuration verified successfully');
+      return {
+        success: true,
+        message: 'SendGrid email configuration is working correctly'
+      };
+    } else {
+      // Test Gmail SMTP configuration
+      console.log('Testing Gmail SMTP configuration...');
+      console.log(`SMTP Host: ${transporter.options.host}`);
+      console.log(`SMTP Port: ${transporter.options.port}`);
+      console.log(`Auth User: ${transporter.options.auth?.user ? 'Set' : 'Not set'}`);
+      console.log(`Secure: ${transporter.options.secure}`);
+
+      // Verify transporter configuration
+      await transporter.verify();
+      console.log('Gmail SMTP configuration verified successfully');
+      return {
+        success: true,
+        message: 'Gmail SMTP email configuration is working correctly'
+      };
+    }
   } catch (error) {
     console.error('Email configuration error:', error);
     console.error('Error details:', {

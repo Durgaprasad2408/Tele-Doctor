@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer';
 import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
 
@@ -8,39 +7,6 @@ dotenv.config();
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
-
-// Create a transporter using Gmail with production-optimized settings
-const createTransporter = () => {
-  // Use direct SMTP configuration for better reliability
-  const config = {
-    host: 'smtp.gmail.com',
-    port: 587, // Use STARTTLS for better compatibility
-    secure: false, // STARTTLS
-    requireTLS: true,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
-    },
-    // Connection settings optimized for production
-    connectionTimeout: 60000,
-    greetingTimeout: 30000,
-    socketTimeout: 60000,
-    // Disable pooling for Gmail
-    pool: false,
-    maxConnections: 1,
-    maxMessages: 100,
-    // Additional options for better compatibility
-    tls: {
-      rejectUnauthorized: false,
-      minVersion: 'TLSv1.2'
-    }
-  };
-
-  console.log(`Gmail SMTP transporter configured: host=${config.host}, port=${config.port}, secure=${config.secure}`);
-  return nodemailer.createTransport(config);
-};
-
-const transporter = createTransporter();
 
 // Email template for OTP
 const otpEmailTemplate = (otp) => ({
@@ -190,70 +156,40 @@ export const sendOTPMail = async (email, otp) => {
     console.log('Environment check:');
     console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
     console.log(`SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'Set' : 'NOT SET'}`);
-    console.log(`EMAIL_USER: ${process.env.EMAIL_USER ? 'Set' : 'NOT SET'}`);
-    console.log(`EMAIL_PASSWORD: ${process.env.EMAIL_PASSWORD ? 'Set (length: ' + process.env.EMAIL_PASSWORD.length + ')' : 'NOT SET'}`);
     console.log(`EMAIL_FROM: ${process.env.EMAIL_FROM}`);
+
+    // Check if SendGrid is configured
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SendGrid API key not configured');
+      return {
+        success: false,
+        error: 'SendGrid API key not configured',
+        message: 'Email service not configured'
+      };
+    }
 
     const template = otpEmailTemplate(otp);
 
-    // Use SendGrid if API key is available (preferred for both local and production)
-    if (process.env.SENDGRID_API_KEY) {
-      console.log('Using SendGrid for email delivery');
+    console.log('Using SendGrid for email delivery');
 
-      const msg = {
-        to: email,
-        from: process.env.EMAIL_FROM || 'noreply@telemed.com',
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
-      };
+    const msg = {
+      to: email,
+      from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    };
 
-      console.log(`Sending OTP email via SendGrid to: ${email}`);
-      const result = await sgMail.send(msg);
-      console.log('SendGrid email sent successfully:', result[0]?.headers?.['x-message-id']);
-      console.log('=== EMAIL DEBUG END ===');
+    console.log(`Sending OTP email via SendGrid to: ${email}`);
+    const result = await sgMail.send(msg);
+    console.log('SendGrid email sent successfully:', result[0]?.headers?.['x-message-id']);
+    console.log('=== EMAIL DEBUG END ===');
 
-      return {
-        success: true,
-        messageId: result[0]?.headers?.['x-message-id'],
-        message: 'OTP sent successfully via SendGrid'
-      };
-    } else {
-      // Fallback to Gmail SMTP when SendGrid is not configured
-      console.log('Using Gmail SMTP for email delivery (SendGrid not configured)');
-
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
-        to: email,
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
-      };
-
-      console.log(`Sending OTP email to: ${email}`);
-      console.log(`Transporter host: ${transporter.options.host}:${transporter.options.port}`);
-
-      // Skip verification entirely for faster response in production
-      if (process.env.NODE_ENV === 'development') {
-        try {
-          await transporter.verify();
-          console.log('Transporter verified successfully');
-        } catch (verifyError) {
-          console.warn('Transporter verification warning:', verifyError.message);
-          // Don't throw in development either - just log
-        }
-      }
-
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully:', info.messageId);
-      console.log('=== EMAIL DEBUG END ===');
-
-      return {
-        success: true,
-        messageId: info.messageId,
-        message: 'OTP sent successfully via Gmail'
-      };
-    }
+    return {
+      success: true,
+      messageId: result[0]?.headers?.['x-message-id'],
+      message: 'OTP sent successfully via SendGrid'
+    };
   } catch (error) {
     console.error('=== EMAIL ERROR DEBUG ===');
     console.error('Error sending OTP email:', error.message);
@@ -443,47 +379,34 @@ export const sendWelcomeEmail = async (email, firstName, role) => {
       `
     };
 
-    // Use SendGrid if API key is available (preferred for both local and production)
-    if (process.env.SENDGRID_API_KEY) {
-      console.log('Using SendGrid for welcome email');
-
-      const msg = {
-        to: email,
-        from: process.env.EMAIL_FROM || 'noreply@telemed.com',
-        subject: welcomeTemplate.subject,
-        html: welcomeTemplate.html,
-        text: welcomeTemplate.text,
-      };
-
-      const result = await sgMail.send(msg);
-      console.log('Welcome email sent successfully via SendGrid:', result[0]?.headers?.['x-message-id']);
-
+    // Check if SendGrid is configured
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SendGrid API key not configured');
       return {
-        success: true,
-        messageId: result[0]?.headers?.['x-message-id'],
-        message: 'Welcome email sent successfully via SendGrid'
-      };
-    } else {
-      // Fallback to Gmail SMTP when SendGrid is not configured
-      console.log('Using Gmail SMTP for welcome email (SendGrid not configured)');
-
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || 'TeleMed <noreply@telemed.com>',
-        to: email,
-        subject: welcomeTemplate.subject,
-        html: welcomeTemplate.html,
-        text: welcomeTemplate.text,
-      };
-
-      const info = await transporter.sendMail(mailOptions);
-      console.log('Welcome email sent successfully:', info.messageId);
-
-      return {
-        success: true,
-        messageId: info.messageId,
-        message: 'Welcome email sent successfully via Gmail'
+        success: false,
+        error: 'SendGrid API key not configured',
+        message: 'Email service not configured'
       };
     }
+
+    console.log('Using SendGrid for welcome email');
+
+    const msg = {
+      to: email,
+      from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+      subject: welcomeTemplate.subject,
+      html: welcomeTemplate.html,
+      text: welcomeTemplate.text,
+    };
+
+    const result = await sgMail.send(msg);
+    console.log('Welcome email sent successfully via SendGrid:', result[0]?.headers?.['x-message-id']);
+
+    return {
+      success: true,
+      messageId: result[0]?.headers?.['x-message-id'],
+      message: 'Welcome email sent successfully via SendGrid'
+    };
   } catch (error) {
     console.error('Error sending welcome email:', error);
     return {
@@ -504,40 +427,32 @@ export const testEmailConfiguration = async () => {
     console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
     console.log(`SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? 'Set' : 'Not set'}`);
 
-    // Test SendGrid if API key is available (preferred for both local and production)
-    if (process.env.SENDGRID_API_KEY) {
-      console.log('Testing SendGrid configuration...');
-
-      const testMsg = {
-        to: process.env.EMAIL_USER || 'test@example.com', // Send to yourself for testing
-        from: process.env.EMAIL_FROM || 'noreply@telemed.com',
-        subject: 'TeleMed Email Configuration Test',
-        text: 'This is a test email to verify SendGrid configuration.',
-        html: '<p>This is a test email to verify <strong>SendGrid</strong> configuration.</p>'
-      };
-
-      await sgMail.send(testMsg);
-      console.log('SendGrid configuration verified successfully');
+    // Check if SendGrid is configured
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SendGrid API key not configured');
       return {
-        success: true,
-        message: 'SendGrid email configuration is working correctly'
-      };
-    } else {
-      // Fallback to test Gmail SMTP configuration
-      console.log('Testing Gmail SMTP configuration (SendGrid not configured)...');
-      console.log(`SMTP Host: ${transporter.options.host}`);
-      console.log(`SMTP Port: ${transporter.options.port}`);
-      console.log(`Auth User: ${transporter.options.auth?.user ? 'Set' : 'Not set'}`);
-      console.log(`Secure: ${transporter.options.secure}`);
-
-      // Verify transporter configuration
-      await transporter.verify();
-      console.log('Gmail SMTP configuration verified successfully');
-      return {
-        success: true,
-        message: 'Gmail SMTP email configuration is working correctly'
+        success: false,
+        error: 'SendGrid API key not configured',
+        message: 'SendGrid API key is required for email functionality'
       };
     }
+
+    console.log('Testing SendGrid configuration...');
+
+    const testMsg = {
+      to: process.env.EMAIL_USER || 'test@example.com', // Send to yourself for testing
+      from: process.env.EMAIL_FROM || 'noreply@telemed.com',
+      subject: 'TeleMed Email Configuration Test',
+      text: 'This is a test email to verify SendGrid configuration.',
+      html: '<p>This is a test email to verify <strong>SendGrid</strong> configuration.</p>'
+    };
+
+    await sgMail.send(testMsg);
+    console.log('SendGrid configuration verified successfully');
+    return {
+      success: true,
+      message: 'SendGrid email configuration is working correctly'
+    };
   } catch (error) {
     console.error('Email configuration error:', error);
     console.error('Error details:', {
